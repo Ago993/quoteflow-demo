@@ -1,6 +1,6 @@
 # QuoteFlow
 
-Demo portfolio per creare preventivi professionali direttamente dal browser.
+Demo portfolio per creare preventivi professionali direttamente dal browser, con editor e anteprima documento in tempo reale.
 
 **Demo online:** https://ago993.github.io/quoteflow-demo/
 
@@ -40,5 +40,3 @@ HTML, CSS e JavaScript puro. Nessuna dipendenza runtime.
 ## Nota
 
 Questa è una demo dimostrativa. In un progetto reale campi, imposte, numerazione, layout, regole di sconto e integrazioni verrebbero adattati alle esigenze del cliente.
-
-![QuoteFlow demo](assets/quoteflow-demo.png)
