@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>QuoteFlow — Preventivi automatici</title>
+  <meta name="description" content="Demo portfolio per creare preventivi con righe, sconti, imposta configurabile e PDF.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero no-print">
+      <span class="eyebrow">DEMO PORTFOLIO · PREVENTIVI AUTOMATICI</span>
+      <h1>QuoteFlow</h1>
+      <p>Crea un preventivo professionale con cliente, voci, quantità, sconti, imposta configurabile e PDF.</p>
+      <div class="privacy">Elaborazione locale nel browser: nessun dato viene inviato a un server.</div>
+    </header>
+    <section class="workspace">
+      <aside class="editor no-print">
+        <div class="card">
+          <h2>Dati preventivo</h2>
+          <div class="field-grid">
+            <label>Numero<input id="quoteNo" value="Q-2026-001"></label>
+            <label>Data<input id="quoteDate" type="date"></label>
+            <label class="wide">Cliente<input id="clientName" placeholder="Cliente demo"></label>
+            <label class="wide">Email<input id="clientEmail" type="email" placeholder="contatto@example.com"></label>
+            <label>Imposta %<input id="taxRate" type="number" min="0" step="0.01" value="22"></label>
+            <label>Validità giorni<input id="validDays" type="number" min="1" step="1" value="30"></label>
+          </div>
+        </div>
+    <section class="workspace">
+      <aside class="editor no-print">
+        <div class="card">
+          <h2>Dati preventivo</h2>
+          <div class="field-grid">
+            <label>Numero<input id="quoteNo" value="Q-2026-001"></label>
+            <label>Data<input id="quoteDate" type="date"></label>
+            <label class="wide">Cliente<input id="clientName" placeholder="Cliente demo"></label>
+            <label>Imposta %<input id="taxRate" type="number" min="0" step="0.01" value="22"></label>
+            <label>Validità giorni<input id="validDays" type="number" min="1" step="1" value="30"></label>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-head">
+            <h2>Voci</h2>
+            <button id="addRowBtn" class="secondary small">+ Aggiungi voce</button>
+          </div>
+          <div id="lineEditors" class="line-editors"></div>
+        </div>
+        <div class="actions">
+          <button id="sampleBtn" class="secondary">Carica esempio</button>
+          <button id="resetBtn" class="ghost">Azzera</button>
+        </div>
+      </aside>
+      <section class="preview" id="quotePreview">
+        <div class="quote-head">
+          <div class="brand">
+            <span class="brand-mark">QF</span>
+            <div class="brand-copy">
+              <strong>QuoteFlow Demo</strong>
+              <span>Preventivo generato automaticamente</span>
+            </div>
+          </div>
+          <div class="quote-meta">
+            <span>Preventivo</span>
+            <strong id="previewNo">Q-2026-001</strong>
+            <small id="previewDate"></small>
+          </div>
+        </div>
+        <div class="client-box">
+          <span>Preparato per</span>
+          <strong id="previewClient">Cliente</strong>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Descrizione</th><th>Q.tà</th><th>Prezzo</th><th>Sconto</th><th>Totale</th></tr></thead>
+            <tbody id="previewRows"></tbody>
+          </table>
+        </div>
+        <div class="totals">
+          <div><span>Subtotale</span><strong id="subtotal">€0,00</strong></div>
+          <div><span>Sconti</span><strong id="discountTotal">€0,00</strong></div>
+          <div><span id="taxLabel">Imposta 22%</span><strong id="taxTotal">€0,00</strong></div>
+          <div class="grand"><span>Totale</span><strong id="grandTotal">€0,00</strong></div>
+        </div>
+        <div class="note">
+          <strong>Validità</strong>
+          <span id="validityText">30 giorni dalla data del preventivo.</span>
+        </div>
+        <div class="preview-actions no-print">
+          <button id="exportBtn" class="secondary">Esporta CSV</button>
+          <button id="printBtn" class="primary">Stampa / Salva PDF</button>
+        </div>
+        <footer>QuoteFlow · demo dimostrativa di automazione preventivi</footer>
+      </section>
+    </section>
+  </main>
+  <script src="core.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
