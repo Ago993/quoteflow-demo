@@ -97,5 +97,3 @@ $("exportBtn").addEventListener("click",()=>{
 });
 reset();
 if(new URLSearchParams(location.search).get("demo")==="1") sample();
-
-[executed on device: DESKTOP-DJA211M (1f8206c3-dd63-4d36-9985-febd962bb318)]
