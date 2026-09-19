@@ -14,13 +14,13 @@ Demo portfolio per creare, salvare, riaprire ed esportare preventivi professiona
 - calcolo automatico di subtotale, imposta e totale;
 - importazione CSV di righe prodotto/servizio;
 - esportazione CSV reimportabile;
-- salvataggio completo in `.quoteflow.json`;
+- salvataggio completo in `.qflow`;
 - riapertura di un preventivo salvato con ricostruzione dello stato;
 - stampa / salvataggio PDF tramite browser.
 
 ## Round-trip
 
-Il file `.quoteflow.json` conserva numero, data, cliente, email, imposta, validita e tutte le righe. Puo essere riaperto in QuoteFlow per continuare a modificare il preventivo.
+Il file `.qflow` conserva numero, data, cliente, email, imposta, validita e tutte le righe. Puo essere riaperto in QuoteFlow per continuare a modificare il preventivo. I vecchi file `.quoteflow.json` restano compatibili.
 
 Il CSV e pensato invece per interoperabilita con Excel e altri strumenti tabellari. QuoteFlow riconosce separatori con virgola, punto e virgola o tab.
 

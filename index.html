@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>QuoteFlow - Preventivi automatici</title>
   <meta name="description" content="Crea, salva, riapri ed esporta preventivi professionali direttamente dal browser.">
-  <link rel="stylesheet" href="styles.css?v=20260919-5">
+  <link rel="stylesheet" href="styles.css?v=20260919-6">
 </head>
 <body>
   <header class="topbar no-print">
@@ -78,14 +78,14 @@
           <div class="file-action-grid">
             <button id="openQuoteBtn" class="file-action-button">
               <span class="file-action-icon">O</span>
-              <span><strong>Apri preventivo</strong><small>.quoteflow.json</small></span>
+              <span><strong>Apri preventivo</strong><small>.qflow</small></span>
             </button>
             <button id="importCsvBtn" class="file-action-button">
               <span class="file-action-icon">CSV</span>
               <span><strong>Importa CSV</strong><small>Righe prodotto/servizio</small></span>
             </button>
           </div>
-          <input id="openQuoteFile" class="hidden-file-input" type="file" accept=".json,.quoteflow.json,application/json">
+          <input id="openQuoteFile" class="hidden-file-input" type="file" accept=".qflow,.json,application/json,application/vnd.quoteflow+json">
           <input id="importCsvFile" class="hidden-file-input" type="file" accept=".csv,text/csv">
           <div id="messageBox" class="message-box hidden"></div>
         </div>
@@ -170,7 +170,7 @@
     </section>
   </main>
 
-  <script src="core.js?v=20260919-5"></script>
-  <script src="app.js?v=20260919-5"></script>
+  <script src="core.js?v=20260919-6"></script>
+  <script src="app.js?v=20260919-6"></script>
 </body>
 </html>

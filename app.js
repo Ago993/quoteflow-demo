@@ -147,7 +147,7 @@ function downloadText(text,name,type){
 function saveQuote(){
   try{
     const text=QuoteFlow.serializeQuote(currentState());
-    downloadText(text,safeFilename($("quoteNo").value)+".quoteflow.json","application/json;charset=utf-8");
+    downloadText(text,safeFilename($("quoteNo").value)+".qflow","application/vnd.quoteflow+json;charset=utf-8");
     showMessage("Preventivo salvato. Potrai riaprirlo e continuare a modificarlo.","ok");
   }catch(err){
     showMessage(err.message,"error");
