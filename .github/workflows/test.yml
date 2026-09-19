@@ -24,4 +24,6 @@ jobs:
           node --check core.js
           node --check app.js
       - name: Run tests
-        run: node tests/test_core.js
+        run: |
+          node tests/test_core.js
+          node tests/test_security.js
