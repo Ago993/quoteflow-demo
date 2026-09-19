@@ -65,4 +65,11 @@ try{core.parseQuote('{"format":"other","version":1,"quote":{}}');}
 catch(err){invalidRejected=/non e un preventivo QuoteFlow/.test(err.message);}
 assert.equal(invalidRejected,true);
 
+const fs=require("fs");
+const path=require("path");
+const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
+const openInput=html.match(/<input[^>]+id="openQuoteFile"[^>]*>/)?.[0]||"";
+assert.ok(openInput);
+assert.ok(!/\saccept=/.test(openInput),"openQuoteFile must not use accept filtering because iOS blocks custom .qflow files");
+
 console.log("OK - all QuoteFlow round-trip tests passed");
