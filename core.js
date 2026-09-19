@@ -10,8 +10,22 @@
     fieldChars:10_000,
     quoteChars:2_000_000,
     quoteLines:500,
-    descriptionChars:1_000
+    descriptionChars:1_000,
+    catalogItems:1_000,
+    catalogNameChars:250,
+    catalogSkuChars:100
   };
+
+  const DEFAULT_CATALOG=[
+    {id:"CONS-001",sku:"CONS-001",name:"Consulenza tecnica",unitPrice:80,taxRate:22},
+    {id:"AUTO-001",sku:"AUTO-001",name:"Automazione report mensile",unitPrice:320,taxRate:22},
+    {id:"DATA-001",sku:"DATA-001",name:"Importazione e pulizia dati CSV",unitPrice:180,taxRate:22},
+    {id:"SETUP-001",sku:"SETUP-001",name:"Configurazione e test finali",unitPrice:75,taxRate:22},
+    {id:"WEB-001",sku:"WEB-001",name:"Landing page professionale",unitPrice:450,taxRate:22},
+    {id:"MAINT-001",sku:"MAINT-001",name:"Manutenzione mensile",unitPrice:120,taxRate:22},
+    {id:"TRAIN-001",sku:"TRAIN-001",name:"Formazione operativa 2h",unitPrice:150,taxRate:22},
+    {id:"CUSTOM-001",sku:"CUSTOM-001",name:"Sviluppo funzionalita personalizzata",unitPrice:250,taxRate:22}
+  ];
 
   function boundedString(value,max,label){
     const s=String(value??"");
@@ -19,41 +33,68 @@
     return s;
   }
 
-  function num(v){
-    const n=Number(String(v??"").trim().replace(",","."));
-    return Number.isFinite(n)?n:0;
+  function parseNumber(value){
+    let s=String(value??"").trim().replace(/[€$£\s]/g,"");
+    if(!s) return NaN;
+    const comma=s.lastIndexOf(","),dot=s.lastIndexOf(".");
+    if(comma>=0&&dot>=0){
+      if(comma>dot) s=s.replace(/\./g,"").replace(",",".");
+      else s=s.replace(/,/g,"");
+    }else if(comma>=0) s=s.replace(",",".");
+    const n=Number(s);
+    return Number.isFinite(n)?n:NaN;
+  }
+
+  function num(v,def=0){
+    const n=parseNumber(v);
+    return Number.isFinite(n)?n:def;
   }
 
   function moneyRound(v){
     return Math.round((v+Number.EPSILON)*100)/100;
   }
 
+  function normalizeTaxRate(v,fallback=null){
+    if(v===undefined||v===null||String(v).trim()==="") return fallback;
+    return Math.min(100,Math.max(0,num(v,0)));
+  }
+
   function normalizeLine(line){
     return {
       description:boundedString(line?.description??"",LIMITS.descriptionChars,"Descrizione").trim(),
-      qty:Math.max(0,num(line?.qty)),
-      unitPrice:Math.max(0,num(line?.unitPrice)),
-      discountPct:Math.min(100,Math.max(0,num(line?.discountPct)))
+      qty:Math.max(0,num(line?.qty,0)),
+      unitPrice:Math.max(0,num(line?.unitPrice,0)),
+      discountPct:Math.min(100,Math.max(0,num(line?.discountPct,0))),
+      taxRate:normalizeTaxRate(line?.taxRate,null)
     };
   }
 
-  function calculate(lines,taxRate){
+  function calculate(lines,defaultTaxRate){
+    const defaultRate=Math.min(100,Math.max(0,num(defaultTaxRate,0)));
     const normalized=(lines||[]).map(normalizeLine).filter(x=>x.description||x.qty||x.unitPrice);
     if(normalized.length>LIMITS.quoteLines) throw new Error("Troppe voci nel preventivo.");
-    let gross=0,discountTotal=0;
+    let gross=0,discountTotal=0,tax=0;
+    const breakdownMap=new Map();
+
     const items=normalized.map(x=>{
       const lineGross=moneyRound(x.qty*x.unitPrice);
       const discount=moneyRound(lineGross*x.discountPct/100);
       const net=moneyRound(lineGross-discount);
+      const effectiveTaxRate=x.taxRate==null?defaultRate:x.taxRate;
+      const lineTax=moneyRound(net*effectiveTaxRate/100);
       gross=moneyRound(gross+lineGross);
       discountTotal=moneyRound(discountTotal+discount);
-      return {...x,lineGross,discount,net};
+      tax=moneyRound(tax+lineTax);
+      breakdownMap.set(effectiveTaxRate,moneyRound((breakdownMap.get(effectiveTaxRate)||0)+lineTax));
+      return {...x,taxRate:effectiveTaxRate,lineGross,discount,net,tax:lineTax};
     });
+
     const subtotal=moneyRound(gross-discountTotal);
-    const rate=Math.max(0,num(taxRate));
-    const tax=moneyRound(subtotal*rate/100);
     const total=moneyRound(subtotal+tax);
-    return {items,gross,discountTotal,subtotal,taxRate:rate,tax,total};
+    const taxBreakdown=[...breakdownMap.entries()]
+      .map(([rate,amount])=>({rate:Number(rate),amount}))
+      .sort((a,b)=>a.rate-b.rate);
+    return {items,gross,discountTotal,subtotal,taxRate:defaultRate,tax,total,taxBreakdown};
   }
 
   function protectSpreadsheetText(value){
@@ -72,17 +113,18 @@
   }
 
   function toCSV(result){
-    const head=["Descrizione","Quantita","Prezzo unitario","Sconto %","Totale riga"];
+    const head=["Descrizione","Quantita","Prezzo unitario","Sconto %","IVA %","Totale riga"];
     const rows=result.items.map(x=>[
       protectSpreadsheetText(x.description),
       x.qty,
       x.unitPrice.toFixed(2),
       x.discountPct.toFixed(2),
+      x.taxRate.toFixed(2),
       x.net.toFixed(2)
     ]);
-    rows.push(["Subtotale","","","",result.subtotal.toFixed(2)]);
-    rows.push(["Imposta "+result.taxRate+"%","","","",result.tax.toFixed(2)]);
-    rows.push(["Totale","","","",result.total.toFixed(2)]);
+    rows.push(["Subtotale","","","","",result.subtotal.toFixed(2)]);
+    rows.push(["IVA totale","","","","",result.tax.toFixed(2)]);
+    rows.push(["Totale","","","","",result.total.toFixed(2)]);
     return [head,...rows].map(r=>r.map(escapeCsv).join(",")).join("\n");
   }
 
@@ -98,7 +140,7 @@
     for(let i=0;i<line.length;i++){
       const ch=line[i];
       if(ch==='"') quoted=!quoted;
-      else if(!quoted && Object.prototype.hasOwnProperty.call(counts,ch)) counts[ch]++;
+      else if(!quoted&&Object.prototype.hasOwnProperty.call(counts,ch)) counts[ch]++;
     }
     return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0][0];
   }
@@ -106,7 +148,7 @@
   function parseCSV(text){
     const s=String(text).replace(/^\uFEFF/,"");
     if(s.length>LIMITS.csvChars) throw new Error("CSV troppo grande.");
-    const rows=[]; let row=[]; let field=""; let quoted=false;
+    const rows=[];let row=[];let field="";let quoted=false;
     const delimiter=detectDelimiter(s);
     function pushField(){
       if(field.length>LIMITS.fieldChars) throw new Error("Campo CSV troppo lungo.");
@@ -158,17 +200,19 @@
     const qty=detectColumn(headers,["quantita","qta","qty","quantity"]);
     const unitPrice=detectColumn(headers,["prezzo unitario","prezzo","unit price","price","costo"]);
     const discountPct=detectColumn(headers,["sconto %","sconto","discount %","discount"]);
+    const taxRate=detectColumn(headers,["iva %","iva","tax %","tax","aliquota","aliquota iva"]);
     if(!description||!qty||!unitPrice){
       throw new Error("Il CSV deve contenere almeno Descrizione, Quantita e Prezzo unitario.");
     }
-    const ignored=/^(subtotale|totale|imposta(?:\s|$))/i;
+    const ignored=/^(subtotale|totale|iva totale|imposta(?:\s|$))/i;
     const lines=rows
       .filter(r=>!ignored.test(String(r[description]||"").trim()))
       .map(r=>normalizeLine({
         description:unprotectSpreadsheetText(r[description]),
         qty:r[qty],
         unitPrice:r[unitPrice],
-        discountPct:discountPct?r[discountPct]:0
+        discountPct:discountPct?r[discountPct]:0,
+        taxRate:taxRate?r[taxRate]:null
       }))
       .filter(x=>x.description);
     if(!lines.length) throw new Error("Il CSV non contiene voci importabili.");
@@ -178,7 +222,7 @@
 
   function normalizeQuoteState(input){
     const q=input?.quote&&typeof input.quote==="object"?input.quote:input;
-    if(!q || typeof q!=="object" || Array.isArray(q)) throw new Error("Struttura preventivo non valida.");
+    if(!q||typeof q!=="object"||Array.isArray(q)) throw new Error("Struttura preventivo non valida.");
     if(!Array.isArray(q.lines)) throw new Error("Elenco voci non valido.");
     if(q.lines.length>LIMITS.quoteLines) throw new Error("Troppe voci nel preventivo.");
     const lines=q.lines.map(normalizeLine).filter(x=>x.description||x.qty||x.unitPrice);
@@ -188,20 +232,15 @@
       date:boundedString(q.date??"",32,"Data").trim(),
       clientName:boundedString(q.clientName??"",250,"Cliente").trim(),
       clientEmail:boundedString(q.clientEmail??"",320,"Email").trim(),
-      taxRate:Math.max(0,num(q.taxRate)),
-      validDays:Math.max(1,Math.round(num(q.validDays)||30)),
+      taxRate:Math.min(100,Math.max(0,num(q.taxRate,22))),
+      validDays:Math.max(1,Math.round(num(q.validDays,30))),
       lines
     };
   }
 
   function serializeQuote(state){
     const quote=normalizeQuoteState(state);
-    return JSON.stringify({
-      format:"quoteflow",
-      version:1,
-      savedAt:new Date().toISOString(),
-      quote
-    },null,2);
+    return JSON.stringify({format:"quoteflow",version:1,savedAt:new Date().toISOString(),quote},null,2);
   }
 
   function parseQuote(text){
@@ -215,9 +254,61 @@
     return normalizeQuoteState(parsed);
   }
 
+  function normalizeCatalogItem(item,index=0){
+    if(!item||typeof item!=="object"||Array.isArray(item)) throw new Error("Prodotto catalogo non valido.");
+    const sku=boundedString(item.sku??"",LIMITS.catalogSkuChars,"Codice prodotto").trim();
+    const name=boundedString(item.name??"",LIMITS.catalogNameChars,"Nome prodotto").trim();
+    if(!name) throw new Error("Il prodotto deve avere un nome.");
+    const unitPrice=Math.max(0,num(item.unitPrice,0));
+    const taxRate=Math.min(100,Math.max(0,num(item.taxRate,22)));
+    const id=boundedString(item.id??sku??"",120,"ID prodotto").trim()||("catalog-"+index);
+    return {id,sku,name,unitPrice,taxRate};
+  }
+
+  function normalizeCatalog(items){
+    if(!Array.isArray(items)) throw new Error("Catalogo non valido.");
+    if(items.length>LIMITS.catalogItems) throw new Error("Troppi prodotti nel catalogo.");
+    return items.map((x,i)=>normalizeCatalogItem(x,i));
+  }
+
+  function defaultCatalog(){
+    return DEFAULT_CATALOG.map(x=>({...x}));
+  }
+
+  function catalogCSV(items){
+    const normalized=normalizeCatalog(items);
+    const head=["Codice","Nome","Prezzo","IVA %"];
+    const rows=normalized.map(x=>[
+      protectSpreadsheetText(x.sku),
+      protectSpreadsheetText(x.name),
+      x.unitPrice.toFixed(2),
+      x.taxRate.toFixed(2)
+    ]);
+    return [head,...rows].map(r=>r.map(escapeCsv).join(",")).join("\n");
+  }
+
+  function catalogFromCSV(text){
+    const rows=parseCSV(text);
+    const headers=Object.keys(rows[0]||{});
+    const sku=detectColumn(headers,["codice","sku","id","codice prodotto"]);
+    const name=detectColumn(headers,["nome","prodotto","servizio","descrizione","name"]);
+    const unitPrice=detectColumn(headers,["prezzo","prezzo unitario","price","unit price","costo"]);
+    const taxRate=detectColumn(headers,["iva %","iva","tax %","tax","aliquota","aliquota iva"]);
+    if(!name||!unitPrice) throw new Error("Il catalogo CSV deve contenere almeno Nome e Prezzo.");
+    const items=rows.map((r,i)=>normalizeCatalogItem({
+      id:sku?unprotectSpreadsheetText(r[sku]):("import-"+i),
+      sku:sku?unprotectSpreadsheetText(r[sku]):"",
+      name:unprotectSpreadsheetText(r[name]),
+      unitPrice:r[unitPrice],
+      taxRate:taxRate?r[taxRate]:22
+    },i)).filter(x=>x.name);
+    if(items.length>LIMITS.catalogItems) throw new Error("Troppi prodotti nel catalogo.");
+    return items;
+  }
+
   return {
-    LIMITS,normalizeLine,calculate,toCSV,parseCSV,linesFromCSV,
-    normalizeQuoteState,serializeQuote,parseQuote,
-    protectSpreadsheetText,unprotectSpreadsheetText
+    LIMITS,DEFAULT_CATALOG,normalizeLine,calculate,toCSV,parseCSV,linesFromCSV,
+    normalizeQuoteState,serializeQuote,parseQuote,protectSpreadsheetText,unprotectSpreadsheetText,
+    normalizeCatalogItem,normalizeCatalog,defaultCatalog,catalogCSV,catalogFromCSV
   };
 });

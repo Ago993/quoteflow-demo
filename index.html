@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>QuoteFlow - Preventivi automatici</title>
   <meta name="description" content="Crea, salva, riapri ed esporta preventivi professionali direttamente dal browser.">
-  <link rel="stylesheet" href="styles.css?v=20260919-8">
+  <link rel="stylesheet" href="styles.css?v=20260919-9">
 </head>
 <body>
   <header class="topbar no-print">
@@ -25,13 +25,13 @@
   <main class="shell">
     <section class="intro no-print">
       <div>
-        <span class="eyebrow">PREVENTIVI - AUTOMAZIONE AMMINISTRATIVA</span>
-        <h1>Dal lavoro manuale a un preventivo pronto da inviare.</h1>
-        <p>Compila i dati, aggiungi le voci e QuoteFlow aggiorna in tempo reale subtotale, sconti, imposta e totale finale.</p>
+        <span class="eyebrow">PREVENTIVI - CATALOGO - AUTOMAZIONE AMMINISTRATIVA</span>
+        <h1>Dal catalogo al preventivo, senza riscrivere prezzi e IVA.</h1>
+        <p>Cerca un prodotto o servizio, aggiungilo al preventivo e QuoteFlow compila prezzo e IVA. Puoi sempre modificare le singole voci, importare CSV o inserire dati manualmente.</p>
       </div>
       <div class="intro-note">
         <span class="intro-note-icon">&#10003;</span>
-        <div><strong>Nessun backend</strong><small>I dati restano nel browser.</small></div>
+        <div><strong>Nessun backend</strong><small>Catalogo e preventivi restano nel browser.</small></div>
       </div>
     </section>
 
@@ -55,7 +55,7 @@
             <label><span>Data</span><input id="quoteDate" type="date"></label>
             <label class="wide"><span>Cliente</span><input id="clientName" placeholder="Nome cliente o azienda" maxlength="250"></label>
             <label class="wide"><span>Email</span><input id="clientEmail" type="email" placeholder="cliente@example.com" maxlength="320"></label>
-            <label><span>Imposta %</span><input id="taxRate" type="number" min="0" step="0.01" value="22"></label>
+            <label><span>IVA predefinita %</span><input id="taxRate" type="number" min="0" max="100" step="0.01" value="22"></label>
             <label><span>Validita</span><div class="input-suffix"><input id="validDays" type="number" min="1" step="1" value="30"><span>giorni</span></div></label>
           </div>
         </div>
@@ -64,16 +64,56 @@
           <div class="section-title with-action">
             <div class="section-title-copy">
               <span class="step">02</span>
-              <div><strong>Voci del preventivo</strong><small>Servizi, prodotti e sconti</small></div>
+              <div><strong>Catalogo</strong><small><span id="catalogCount">0</span> prodotti e servizi disponibili</small></div>
             </div>
-            <button id="addRowBtn" class="icon-button" title="Aggiungi voce" aria-label="Aggiungi voce">+</button>
+            <button id="newCatalogBtn" class="icon-button" title="Nuovo prodotto" aria-label="Nuovo prodotto">+</button>
+          </div>
+
+          <label class="catalog-search">
+            <span>Cerca nel catalogo</span>
+            <input id="catalogSearch" type="search" placeholder="Nome, codice o servizio..." maxlength="200" autocomplete="off">
+          </label>
+          <div id="catalogList" class="catalog-list"></div>
+
+          <div id="catalogEditor" class="catalog-editor hidden">
+            <div class="catalog-editor-head">
+              <strong id="catalogEditorTitle">Nuovo prodotto</strong>
+              <button id="cancelCatalogBtn" type="button" class="mini-link">Annulla</button>
+            </div>
+            <div class="catalog-form-grid">
+              <label><span>Codice</span><input id="catalogSku" maxlength="100" placeholder="SKU-001"></label>
+              <label><span>IVA %</span><input id="catalogTax" type="number" min="0" max="100" step="0.01" value="22"></label>
+              <label class="wide"><span>Nome</span><input id="catalogName" maxlength="250" placeholder="Nome prodotto o servizio"></label>
+              <label class="wide"><span>Prezzo EUR</span><input id="catalogPrice" type="number" min="0" step="0.01" value="0"></label>
+            </div>
+            <div class="catalog-editor-actions">
+              <button id="deleteCatalogBtn" type="button" class="button catalog-delete hidden">Elimina</button>
+              <button id="saveCatalogBtn" type="button" class="button primary-button catalog-save">Salva nel catalogo</button>
+            </div>
+          </div>
+
+          <div class="catalog-actions">
+            <button id="importCatalogBtn" class="mini-action">Importa catalogo</button>
+            <button id="exportCatalogBtn" class="mini-action">Esporta catalogo</button>
+            <button id="resetCatalogBtn" class="mini-action">Ripristina demo</button>
+          </div>
+          <input id="importCatalogFile" class="hidden-file-input" type="file" accept=".csv,text/csv">
+        </div>
+
+        <div class="editor-section">
+          <div class="section-title with-action">
+            <div class="section-title-copy">
+              <span class="step">03</span>
+              <div><strong>Voci del preventivo</strong><small>Modificabili anche dopo l'aggiunta dal catalogo</small></div>
+            </div>
+            <button id="addRowBtn" class="icon-button" title="Aggiungi voce manuale" aria-label="Aggiungi voce manuale">+</button>
           </div>
           <div id="lineEditors" class="line-editors"></div>
         </div>
 
         <div class="editor-section">
           <div class="section-title">
-            <span class="step">03</span>
+            <span class="step">04</span>
             <div><strong>File e riuso</strong><small>Riapri un preventivo o importa righe CSV</small></div>
           </div>
           <div class="file-action-grid">
@@ -83,7 +123,7 @@
             </button>
             <button id="importCsvBtn" class="file-action-button">
               <span class="file-action-icon">CSV</span>
-              <span><strong>Importa CSV</strong><small>Righe prodotto/servizio</small></span>
+              <span><strong>Importa righe CSV</strong><small>Descrizione, prezzo, IVA</small></span>
             </button>
           </div>
           <input id="openQuoteFile" class="hidden-file-input" type="file">
@@ -141,7 +181,7 @@
 
           <div class="paper-table-wrap">
             <table class="quote-table">
-              <thead><tr><th>Descrizione</th><th>Q.ta</th><th>Prezzo</th><th>Sconto</th><th>Totale</th></tr></thead>
+              <thead><tr><th>Descrizione</th><th>Q.ta</th><th>Prezzo</th><th>Sconto</th><th>IVA</th><th>Totale</th></tr></thead>
               <tbody id="previewRows"></tbody>
             </table>
           </div>
@@ -149,12 +189,13 @@
           <section class="summary-section">
             <div class="summary-message">
               <span class="paper-label">NOTA</span>
-              <p>Il preventivo riassume le attivita e i costi concordati per il progetto.</p>
+              <p>Prezzi e aliquote del catalogo vengono copiati nella singola voce: modificare il catalogo in futuro non altera i preventivi gia salvati.</p>
             </div>
             <div class="totals-card">
               <div><span>Subtotale</span><strong id="subtotal">&euro;0,00</strong></div>
               <div><span>Sconti</span><strong id="discountTotal">&euro;0,00</strong></div>
-              <div><span id="taxLabel">Imposta 22%</span><strong id="taxTotal">&euro;0,00</strong></div>
+              <div><span id="taxLabel">IVA</span><strong id="taxTotal">&euro;0,00</strong></div>
+              <div id="taxBreakdown" class="tax-breakdown hidden"></div>
               <div class="grand"><span>Totale preventivo</span><strong id="grandTotal">&euro;0,00</strong></div>
             </div>
           </section>
@@ -171,8 +212,7 @@
     </section>
   </main>
 
-  <script src="core.js?v=20260919-8"></script>
-  <script src="app.js?v=20260919-8"></script>
+  <script src="core.js?v=20260919-9"></script>
+  <script src="app.js?v=20260919-9"></script>
 </body>
 </html>
-
